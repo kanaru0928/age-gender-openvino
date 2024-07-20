@@ -1,9 +1,9 @@
 import cv2
 from openvino.runtime import Core
-import matplotlib.pyplot as plt
-import numpy as np
 import argparse
 
+from age_gender_predictor import AgeGenderPredictor
+from face_detector import FaceDetector
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -20,48 +20,27 @@ def parse():
 
 def main(args):
     ie = Core()
-    crop_model = ie.read_model(
-        f"model/intel/face-detection-adas-0001/{args.model}/face-detection-adas-0001.xml"
-    )
-    compiled_crop_model = ie.compile_model(crop_model, device_name=args.device)
-    input_layer = compiled_crop_model.inputs
-    output_layer = compiled_crop_model.outputs
 
+    detector = FaceDetector(args, ie)
     image = cv2.imread(args.image)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    scale = 640 / image.shape[1]
-    image = cv2.resize(image, dsize=None, fx=scale, fy=scale)
-    image_h, image_w, _ = image.shape
-    logger.info(f"image shape: {image.shape}")
 
-    n, c, h, w = input_layer[0].shape
-    input_image = cv2.resize(image, (w, h))
-    input_image = input_image.transpose((2, 0, 1))
-    input_image = input_image.reshape((n, c, h, w))
+    faces = detector.invoke(image)
+    cropped_faces = detector.crop(image, faces, margin_scale=0.2)
 
-    result = compiled_crop_model([input_image])[output_layer[0]]
-    logger.info(f"result shape: {result.shape}")
+    age_gender_predictor = AgeGenderPredictor(args, ie)
 
-    faces = result[0][0][np.where(result[0][0][:, 2] > 0.5)]
+    age_list = []
+    gender_list = []
 
-    for i, face in enumerate(faces):
-        x_min = int(face[3] * image_w)
-        y_min = int(face[4] * image_h)
-        x_max = int(face[5] * image_w)
-        y_max = int(face[6] * image_h)
-        cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-        cv2.putText(
-            image,
-            str(i),
-            (x_min, y_min - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.9,
-            (36, 255, 12),
-            2,
-        )
+    for cropped_face in cropped_faces:
+        age, gender = age_gender_predictor.invoke(cropped_face)
+        age_list.append(age)
+        gender_list.append(gender)
 
-    plt.imshow(image)
-    plt.show()
+    texts = [f"{gender}:{age:.1f}" for gender, age in zip(gender_list, age_list)]
+
+    detector.visualize(image, faces, thickness=3, font_scale=1.2, texts=texts)
 
 
 if __name__ == "__main__":
