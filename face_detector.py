@@ -1,8 +1,8 @@
 from openvino.runtime import Core
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from logger import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -41,6 +41,8 @@ class FaceDetector:
         image_h, image_w, _ = image.shape
 
         cropped_faces = []
+        new_faces = []
+        
         for face in faces:
             x_min = int(face[3] * image_w)
             y_min = int(face[4] * image_h)
@@ -57,10 +59,14 @@ class FaceDetector:
 
             cropped_face = image[y_min:y_max, x_min:x_max]
             cropped_faces.append(cropped_face)
+            
+            new_faces.append([x_min, y_min, x_max, y_max])
+            
+        return cropped_faces, new_faces
 
-        return cropped_faces
-
-    def visualize(self, image, faces, thickness=2, font_scale=0.9, texts=None):
+    def visualize(
+        self, image, faces, thickness=2, font_scale=0.9, texts=None
+    ):
         image_h, image_w, _ = image.shape
         if texts is None:
             texts = [f"face {i}" for i in range(len(faces))]
@@ -82,5 +88,4 @@ class FaceDetector:
                 thickness,
             )
 
-        plt.imshow(image)
-        plt.show()
+        return image

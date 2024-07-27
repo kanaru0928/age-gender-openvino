@@ -11,8 +11,11 @@
 pip install -r requirements.txt
 mkdir model
 omz_downloader --name face-detection-adas-0001 -o model
+omz_downloader --name facial-landmarks-35-adas-0002 -o model
+omz_downloader --name head-pose-estimation-adas-0001 -o model
+omz_downloader --name gaze-estimation-adas-0002 -o model
 ```
-or
+or (Linux or Mac only)
 ```bash
 ./install_model.sh
 ```
