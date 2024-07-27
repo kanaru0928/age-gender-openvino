@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 class AgeGenderPredictor:
     __ModelFile = (
@@ -29,6 +32,11 @@ class AgeGenderPredictor:
         result = self.compiled_model([input_image])
 
         gender = self.__Label[np.argmax(result[self.prob].squeeze())]
+        
+        male_prob = result[self.prob].squeeze()[1]
+        if male_prob > 0.5 and male_prob < 0.85:
+            gender += "?"
+        
         age = result[self.age_out].squeeze() * 100
 
         return age, gender
