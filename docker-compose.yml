@@ -1,0 +1,15 @@
+services:
+  vino:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    volumes:
+      - ./:/app
+      
+  vino-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    
